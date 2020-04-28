@@ -12,6 +12,10 @@ pygame.display.set_caption('Space Rider')
 BACKGROUND = pygame.image.load('Space-Rider/background.jpg')
 JET = pygame.image.load('Space-Rider/jet.png')
 ENEMY = pygame.image.load('Space-Rider/enemy.png')
+SHOT_SOUND = pygame.mixer.Sound('Space-Rider/shot.wav')
+EXPLODE_SOUND = pygame.mixer.Sound('Space-Rider/explosion.wav')
+BACKGROUND_MUSIC = pygame.mixer.music.load('Space-Rider/bgsound.wav')
+pygame.mixer.music.play(-1)
 
 FPS = 60
 FPS_CLOCK = pygame.time.Clock()
@@ -89,6 +93,7 @@ class Enemy(object):
             self.health -= 1
         else:
             self.visible = False
+            EXPLODE_SOUND.play()
 
 
 def redraw_game_window():
@@ -123,6 +128,7 @@ while True:
     keys = pygame.key.get_pressed()
     if keys[pygame.K_SPACE]:
         if len(bullets) < 50:
+            SHOT_SOUND.play()
             bullets.append(Projectile(round(player.x + player.width // 2) + 10, round(player.y + player.height // 2), 6, RED))
             bullets.append(Projectile(round(player.x + player.width // 3) - 12, round(player.y + player.height // 2), 6, RED))
 
