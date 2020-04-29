@@ -1,5 +1,6 @@
 import sys
 import pygame
+import random
 from pygame.locals import *
 
 pygame.init()
@@ -14,8 +15,8 @@ JET = pygame.image.load('Space-Rider/jet.png')
 ENEMY = pygame.image.load('Space-Rider/enemy.png')
 SHOT_SOUND = pygame.mixer.Sound('Space-Rider/shot.wav')
 EXPLODE_SOUND = pygame.mixer.Sound('Space-Rider/explosion.wav')
-BACKGROUND_MUSIC = pygame.mixer.music.load('Space-Rider/bgsound.wav')
-pygame.mixer.music.play(-1)
+# BACKGROUND_MUSIC = pygame.mixer.music.load('Space-Rider/bgsound.wav')
+# pygame.mixer.music.play(-1)
 
 FPS = 60
 FPS_CLOCK = pygame.time.Clock()
@@ -34,11 +35,11 @@ class Player(object):
         self.right = False
         self.speed = 10
         self.hitbox = (self.x, self.y, 50, 60)
+        self.health = 100
 
     def draw(self, WINDOW):
         WINDOW.blit(JET, (self.x, self.y))
         self.hitbox = (self.x, self.y, 50, 60)
-        # pygame.draw.rect(WINDOW, RED, self.hitbox, 2)
 
 
 class Projectile(object):
@@ -54,14 +55,14 @@ class Projectile(object):
 
 
 class Enemy(object):
-    def __init__(self, x, y, width, height, end):
-        self.x = x
+    def __init__(self, y, width, height, end):
+        self.x = random.randint(100, 700)
         self.y = y
         self.width = width
         self.height = height
         self.end = end
         self.path = [self.x, self.end]
-        self.speed = 5
+        self.speed = 2
         self.hitbox = (self.x, self.y, 95, 75)
         self.health = 100
         self.visible = True
@@ -73,24 +74,17 @@ class Enemy(object):
             self.hitbox = (self.x, self.y, 95, 75)
             pygame.draw.rect(WINDOW, RED, (self.hitbox[0], self.hitbox[1] - 20, 10, 20))
             pygame.draw.rect(WINDOW, GREEN, (self.hitbox[0], self.hitbox[1] - 20, 10 - (10 - self.health), 20))
-            # pygame.draw.rect(WINDOW, RED, self.hitbox, 2)
 
     def move(self):
-        if self.speed > 0:
-            if self.x + self.speed < self.path[1]:
-                self.x += self.speed
-            else:
-                self.speed = self.speed * -1
+        if self.y + self.speed < self.path[1]:
+            self.y += self.speed
         else:
-            if self.x - self.speed > self.path[0]:
-                self.x += self.speed
-            else:
-                self.speed = self.speed * -1
+            self.visible = False
 
     def hit(self):
         if self.health > 0:
             bullets.pop(bullets.index(bullet))
-            self.health -= 1
+            self.health -= 5
         else:
             self.visible = False
             EXPLODE_SOUND.play()
@@ -99,15 +93,23 @@ class Enemy(object):
 def redraw_game_window():
     WINDOW.blit(BACKGROUND, (0,0))
     player.draw(WINDOW)
-    enemy.draw(WINDOW)
-    for bullet in bullets:
+    # enemy.draw(WINDOW)
+
+    for bullet in bullets:                          # <-----
         bullet.draw(WINDOW)
+
+    for enemy in enemies:
+        enemy.draw(WINDOW)
+    
     pygame.display.update()
 
 
-enemy = Enemy(100, 10, 100, 83, 650)
+enemy = Enemy(10, -100, 83, WINDOW_HEIGHT + 30)
 player = Player(100, 700, 64, 50)
-bullets = []
+bullets = []                                        # <-----
+enemies = []
+
+
 while True:
     FPS_CLOCK.tick(FPS)
     for event in pygame.event.get():
@@ -115,7 +117,7 @@ while True:
             pygame.quit()
             sys.exit()
 
-    for bullet in bullets:
+    for bullet in bullets:                          # <-----
         if bullet.y - bullet.radius < enemy.hitbox[1] + enemy.hitbox[3] and bullet.y + bullet.radius > enemy.hitbox[1]:
             if bullet.x + bullet.radius > enemy.hitbox[0] and bullet.x - bullet.radius < enemy.hitbox[0] + enemy.hitbox[2]:
                 enemy.hit()
@@ -124,25 +126,34 @@ while True:
             bullet.y -= bullet.speed
         else:
             bullets.pop(bullets.index(bullet))
+    
+    if enemy.health < 1:
+        enemy.draw(WINDOW)
+
 
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_SPACE]:
-        if len(bullets) < 50:
+
+    if keys[pygame.K_1]:
+        enemies.append(enemy)
+
+    if keys[pygame.K_SPACE]:                          # <-----
+        if len(bullets) < 10:
             SHOT_SOUND.play()
             bullets.append(Projectile(round(player.x + player.width // 2) + 10, round(player.y + player.height // 2), 6, RED))
             bullets.append(Projectile(round(player.x + player.width // 3) - 12, round(player.y + player.height // 2), 6, RED))
 
     if keys[pygame.K_LEFT] and player.x > player.speed:
         player.x -= player.speed
-        player.left = True
-        player.right = False
-    elif keys[pygame.K_RIGHT] and player.x < 800 - player.width - player.speed:
+        
+    elif keys[pygame.K_RIGHT] and player.x < WINDOW_HEIGHT - player.width - player.speed:
         player.x += player.speed
-        player.left = False
-        player.right = True
-    else:
-        player.left = False
-        player.right = False        
+        
+    if keys[pygame.K_UP] and player.y > WINDOW_HEIGHT - 200:
+        player.y -= player.speed
+    
+    elif keys[pygame.K_DOWN] and player.y < WINDOW_HEIGHT - 100 :
+        player.y += player.speed
+
     redraw_game_window()
 
 pygame.quit()
